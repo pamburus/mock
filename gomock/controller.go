@@ -57,6 +57,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 )
 
@@ -228,7 +229,7 @@ func (ctrl *Controller) Call(receiver interface{}, method string, args ...interf
 			// and this line changes, i.e. this code is wrapped in another anonymous function.
 			// 0 is us, 1 is controller.Call(), 2 is the generated mock, and 3 is the user's test.
 			origin := callerInfo(3)
-			ctrl.T.Fatalf("Unexpected call to %T.%v(%v) at %s because: %s", receiver, method, args, origin, err)
+			ctrl.T.Fatalf("Unexpected call to %T.%v(%v) at %s %s", receiver, method, formatArgs(args), origin, err)
 		}
 
 		// Two things happen here:
@@ -299,13 +300,41 @@ func (ctrl *Controller) finish(cleanup bool, panicErr interface{}) {
 	}
 }
 
+func formatArgs(args []interface{}) string {
+	s := make([]string, len(args))
+	l := 0
+	for i, arg := range args {
+		switch arg.(type) {
+		case context.Context:
+			s[i] = "<ctx>"
+		default:
+			s[i] = fmt.Sprintf("%v", arg)
+		}
+		l += len(s[i])
+	}
+
+	if l <= 40 {
+		return strings.Join(s, ", ")
+	}
+
+	return "\n" + IndentString(strings.Join(s, ",\n"), 1) + "\n"
+}
+
 // callerInfo returns the file:line of the call site. skip is the number
 // of stack frames to skip when reporting. 0 is callerInfo's call site.
 func callerInfo(skip int) string {
 	if _, file, line, ok := runtime.Caller(skip + 1); ok {
+		i := strings.LastIndexByte(file, '/')
+		if i != -1 {
+			i = strings.LastIndexByte(file[:i], '/')
+		}
+		if i != -1 {
+			file = file[i+1:]
+		}
+
 		return fmt.Sprintf("%s:%d", file, line)
 	}
-	return "unknown file"
+	return "(unknown file)"
 }
 
 // isCleanuper checks it if t's base TestReporter has a Cleanup method.

@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 // Call represents an expected call to a mock.
@@ -285,11 +284,11 @@ func (c *Call) exhausted() bool {
 }
 
 func (c *Call) String() string {
-	args := make([]string, len(c.args))
+	args := make([]interface{}, len(c.args))
 	for i, arg := range c.args {
 		args[i] = arg.String()
 	}
-	arguments := strings.Join(args, ", ")
+	arguments := formatArgs(args)
 	return fmt.Sprintf("%T.%v(%s) %s", c.receiver, c.method, arguments, c.origin)
 }
 
