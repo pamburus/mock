@@ -248,6 +248,12 @@ func (c *Call) SetArg(n int, value interface{}) *Call {
 	return c
 }
 
+// Origin configures custom origin for the call.
+func (c *Call) Origin(origin string) *Call {
+	c.origin = origin
+	return c
+}
+
 // isPreReq returns true if other is a direct or indirect prerequisite to c.
 func (c *Call) isPreReq(other *Call) bool {
 	for _, preReq := range c.preReqs {
